@@ -1,0 +1,62 @@
+{% if client_temp_id %}
+<div id="{{ client_temp_id }}" hx-swap-oob="outerHTML">
+    {% endif %}
+
+    <div class="columns is-mobile mb-4">
+        <!-- User Message (Right Aligned) -->
+        <div class="column is-12 is-flex is-justify-content-flex-end">
+            <div class="notification is-primary is-light py-2 px-4"
+                style="max-width: 85%; border-radius: 1rem 1rem 0 1rem;">
+                <p
+                    class="is-size-6 has-text-weight-medium mb-1 is-flex is-justify-content-end align-items-center gap-2">
+                    <span class="is-size-7 opacity-50">{{ task.created_at|date:"H:i" }}</span>
+                    <span>Você</span>
+                </p>
+                <p>{{ task.prompt }}</p>
+            </div>
+            <div class="is-flex align-items-end ml-2 pb-1">
+                <span class="icon is-small has-text-primary">
+                    <i class="fas fa-user"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agent Message Container (Left Aligned) -->
+    <div class="columns is-mobile mb-5">
+        <div class="column is-12 is-flex is-justify-content-flex-start">
+            <div class="is-flex align-items-end mr-2 pb-1">
+                <span class="icon is-small has-text-link">
+                    <i class="fas fa-robot"></i>
+                </span>
+            </div>
+
+            <div class="notification is-dark py-3 px-4"
+                style="max-width: 90%; border-radius: 1rem 1rem 1rem 0; min-width: 300px;">
+                <div class="is-flex is-justify-content-space-between align-items-center mb-2">
+                    <span class="has-text-weight-bold has-text-link">AI Agent</span>
+                    <span class="tag is-info is-light is-rounded" id="agent-status-{{ task.id }}">Iniciando...</span>
+                </div>
+
+                <!-- Dynamic Content Area -->
+                <div id="agent-steps-{{ task.id }}" hx-get="/agent/stream/{{ task.id }}/" hx-trigger="load"
+                    hx-swap="outerHTML">
+
+                    <div class="is-flex is-justify-content-center py-4">
+                        <span class="loader is-loading"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if client_temp_id %}
+</div>
+{% endif %}
+
+{% if new_session_id %}
+<input type="hidden" id="session_id" name="session_id" value="{{ new_session_id }}" hx-swap-oob="true">
+<script>
+    window.history.pushState({}, "", "/agent/{{ new_session_id }}/");
+</script>
+{% endif %}

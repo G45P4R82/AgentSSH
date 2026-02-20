@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}AI Remote Agent - Hosts{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-max-desktop">
+        <div class="level">
+            <div class="level-left">
+                <div class="level-item">
+                    <div>
+                        <h1 class="title">Hosts Registrados</h1>
+                        <h2 class="subtitle">Gerencie seus servidores SSH</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item">
+                    <div class="buttons">
+                        <a href="{% url 'host_new' %}" class="button is-primary">
+                            <span class="icon"><i class="fas fa-plus"></i></span>
+                            <span>Novo Host</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if hosts %}
+        <div class="box">
+            <div class="table-container">
+                <table class="table is-fullwidth is-hoverable is-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Hostname/IP</th>
+                            <th>Usuário</th>
+                            <th>Criado em</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for host in hosts %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    <a href="{% url 'host_edit' host.id %}" class="has-text-dark">
+                                        {{ host.name|default:"Sem Nome" }}
+                                    </a>
+                                </strong>
+                            </td>
+                            <td><span class="tag is-info is-light">{{ host.hostname }}</span></td>
+                            <td>{{ host.username }}</td>
+                            <td>{{ host.created_at|date:"d/m/Y" }}</td>
+                            <td>
+                                <div class="buttons are-small">
+                                    <a href="{% url 'host_edit' host.id %}" class="button is-info is-outlined"
+                                        title="Editar">
+                                        <span class="icon is-small"><i class="fas fa-edit"></i></span>
+                                    </a>
+                                    <form action="{% url 'host_delete' host.id %}" method="post" style="display:inline;"
+                                        onsubmit="return confirm('Tem certeza que deseja excluir {{ host.name }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button is-danger is-outlined" title="Excluir">
+                                            <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="notification is-info is-light">
+            <span class="icon"><i class="fas fa-info-circle"></i></span>
+            Nenhum host registrado ainda. Clique em "Novo Host" para começar.
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

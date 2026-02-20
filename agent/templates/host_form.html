@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Host - AI Remote Agent{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container is-max-tablet">
+        <div class="box">
+            <h1 class="title is-4 mb-5">
+                <span class="icon-text">
+                    <span class="icon has-text-primary"><i class="fas fa-server"></i></span>
+                    <span>{% if host %}Editar Host: {{ host.name }}{% else %}Adicionar Novo Host{% endif %}</span>
+                </span>
+            </h1>
+
+            <form method="post"
+                action="{% if host %}{% url 'host_edit' host.id %}{% else %}{% url 'host_new' %}{% endif %}">
+                {% csrf_token %}
+
+                <div class="field">
+                    <label class="label">Nome do Host</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="text" name="name" placeholder="Ex: Servidor Produção"
+                            value="{{ host.name|default:'' }}" required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-tag"></i>
+                        </span>
+                    </div>
+                    <p class="help">Um nome amigável para identificar este servidor.</p>
+                </div>
+
+                <div class="field">
+                    <label class="label">Hostname / IP</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="text" name="hostname" placeholder="Ex: 192.168.1.100 ou example.com"
+                            value="{{ host.hostname|default:'' }}" required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-globe"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Usuário SSH</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="text" name="username" placeholder="Ex: root"
+                            value="{{ host.username|default:'' }}" required>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-user"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Senha SSH</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="password" name="password" {% if not host %}required{% endif %}>
+                        <span class="icon is-small is-left">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                    </div>
+                    <p class="help is-danger">⚠️ A senha será armazenada em texto puro (Apenas MVP). {% if host %}Deixe
+                        em branco para manter a senha atual.{% endif %}</p>
+                </div>
+
+                <div class="field mt-4">
+                    <label class="checkbox">
+                        <input type="checkbox" name="use_sudo" {% if host.use_sudo %}checked{% endif %}>
+                        <strong>Usar sudo para comandos?</strong>
+                    </label>
+                    <p class="help">Se marcado, a senha acima será usada como senha de sudo quando necessário.</p>
+                </div>
+
+                <div class="field is-grouped mt-5">
+                    <div class="control">
+                        <button type="submit" class="button is-primary">{% if host %}Atualizar Host{% else %}Salvar
+                            Host{% endif %}</button>
+                    </div>
+                    <div class="control">
+                        <a href="{% url 'hosts' %}" class="button is-link is-light">Cancelar</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

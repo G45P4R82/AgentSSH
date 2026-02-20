@@ -1,0 +1,71 @@
+{% if client_temp_id %}
+<div id="{{ client_temp_id }}" hx-swap-oob="outerHTML">
+    {% endif %}
+
+    <div class="columns is-mobile mb-4">
+        <!-- User Message (Right Aligned) -->
+        <div class="column is-12 is-flex is-justify-content-flex-end">
+            <div class="notification is-primary is-light py-2 px-4"
+                style="max-width: 85%; border-radius: 1rem 1rem 0 1rem;">
+                <p
+                    class="is-size-6 has-text-weight-medium mb-1 is-flex is-justify-content-end align-items-center gap-2">
+                    <span class="is-size-7 opacity-50">{{ task.created_at|date:"H:i" }}</span>
+                    <span>Você</span>
+                </p>
+                <p>{{ task.prompt }}</p>
+            </div>
+            <div class="is-flex align-items-end ml-2 pb-1">
+                <span class="icon is-small has-text-primary">
+                    <i class="fas fa-user"></i>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="columns is-mobile mb-5">
+        <!-- Agent Message (Left Aligned) -->
+        <div class="column is-12 is-flex is-justify-content-flex-start">
+            <div class="is-flex align-items-end mr-2 pb-1">
+                <span class="icon is-small has-text-link">
+                    <i class="fas fa-robot"></i>
+                </span>
+            </div>
+            <div class="notification is-dark py-3 px-4" style="max-width: 90%; border-radius: 1rem 1rem 1rem 0;">
+                <div class="is-flex is-justify-content-space-between align-items-center mb-2">
+                    <span class="has-text-weight-bold has-text-link">AI Agent</span>
+                    {% if task.status == 'success' %}
+                    <span class="tag is-success is-light is-rounded">Sucesso</span>
+                    {% else %}
+                    <span class="tag is-danger is-light is-rounded">Erro</span>
+                    {% endif %}
+                </div>
+
+                <!-- Command -->
+                <div class="mb-3">
+                    <p class="heading has-text-grey-light mb-1"><i class="fas fa-bolt mr-1"></i> Comando</p>
+                    <pre class="p-2 is-size-7" style="border-radius: 4px;">{{ task.generated_command }}</pre>
+                </div>
+
+                <!-- Output -->
+                <div>
+                    <p class="heading has-text-grey-light mb-1"><i class="fas fa-terminal mr-1"></i> Resultado</p>
+                    <div class="box has-background-black-ter has-text-white-ter p-3 is-family-monospace is-size-7"
+                        style="max-height: 300px; overflow-y: auto;">
+                        {{ task.output|linebreaksbr }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if client_temp_id %}
+</div>
+{% endif %}
+
+{% if new_session_id %}
+<input type="hidden" id="session_id" name="session_id" value="{{ new_session_id }}" hx-swap-oob="true">
+<script>
+    // Update URL without reload
+    window.history.pushState({}, "", "/agent/{{ new_session_id }}/");
+</script>
+{% endif %}

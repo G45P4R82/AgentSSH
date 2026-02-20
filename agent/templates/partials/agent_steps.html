@@ -1,0 +1,113 @@
+<div id="agent-steps-{{ task.id }}" class="mb-2">
+
+    <!-- Status Header Update -->
+    <div id="agent-status-{{ task.id }}" hx-swap-oob="true">
+        {% if task.status == 'success' %}
+        <span class="tag is-success is-light is-rounded transition-all">Concluído <i
+                class="fas fa-check ml-1"></i></span>
+        {% elif task.status == 'error' %}
+        <span class="tag is-danger is-light is-rounded transition-all">Erro <i class="fas fa-times ml-1"></i></span>
+        {% else %}
+        <span class="tag is-info is-light is-rounded is-loading-custom transition-all">
+            AI Agent trabalhando...
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Steps Loop -->
+    <div class="steps-container">
+        {% for step in steps %}
+        <!-- Removed fade-in class to prevent flashing on poll updates -->
+        <div class="step-item mb-4">
+
+            <!-- Thought Bubble -->
+            {% if step.thought %}
+            <div class="notification is-dark is-light p-3 is-size-7 mb-2"
+                style="border-left: 3px solid #3e8ed0; background-color: #2b2d31 !important; color: #b0b3b8;">
+                <p class="is-italic"><i class="fas fa-brain mr-2 opacity-50"></i>{{ step.thought }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Command Execution -->
+            {% if step.command %}
+            <div class="message is-dark mb-2 is-small" style="background-color: transparent;">
+                <div class="message-header p-2 is-size-7"
+                    style="background-color: #202124; border: 1px solid #3c4043; border-bottom: none;">
+                    <span class="has-text-grey-light"><i class="fas fa-terminal mr-2"></i>Terminal</span>
+                </div>
+                <div class="message-body p-2 has-background-black-ter has-text-white-ter is-family-monospace is-size-7"
+                    style="border: 1px solid #3c4043; border-top: none;">
+                    <span class="has-text-success">$</span> {{ step.command }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Command Output -->
+            {% if step.output %}
+            <div class="box has-background-black-ter has-text-grey-lighter p-2 mb-2 is-family-monospace is-size-7"
+                style="max-height: 200px; overflow-y: auto; border: 1px solid #3c4043;">
+                {{ step.output|linebreaksbr }}
+            </div>
+            {% endif %}
+
+            <!-- Analysis/Answer -->
+            {% if step.analysis %}
+            <div class="notification is-success is-light p-3 mt-2"
+                style="background-color: #1e2824 !important; border-left: 3px solid #0f9d58; color: #e8eaed !important;">
+                <p class="has-text-weight-bold mb-1"><i class="fas fa-check-circle mr-1 has-text-success"></i> Resposta:
+                </p>
+                <div class="content is-small mt-1">
+                    {{ step.analysis|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Polling Trigger -->
+    {% if is_running %}
+    <div hx-get="/agent/stream/{{ task.id }}/" hx-trigger="load delay:1s" hx-target="#agent-steps-{{ task.id }}"
+        hx-swap="outerHTML" class="py-2">
+        <!-- Hidden polling trigger, no visual loader needed here as the status tag pulses -->
+    </div>
+    {% endif %}
+
+    <!-- Final State Handling -->
+    {% if task.status == 'error' %}
+    <div class="notification is-danger is-light p-3">
+        <p class="has-text-weight-bold">Erro:</p>
+        <p>{{ task.output }}</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+
+    /* Pulse effect for the status tag */
+    .is-loading-custom::after {
+        content: "●";
+        display: inline-block;
+        margin-left: 8px;
+        font-size: 0.8em;
+        animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+        0% {
+            opacity: 0.2;
+        }
+
+        50% {
+            opacity: 1;
+        }
+
+        100% {
+            opacity: 0.2;
+        }
+    }
+</style>
