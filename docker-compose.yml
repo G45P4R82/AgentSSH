@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  # ─── Redis (broker do Celery) ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: agentssh_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ─── Django runserver ──────────────────────────────────────────────────────
+  web:
+    build: .
+    container_name: agentssh_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app          # hot-reload: edições locais refletem imediatamente
+      - db_data:/app/db.sqlite3
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ─── Celery Worker ─────────────────────────────────────────────────────────
+  worker:
+    build: .
+    container_name: agentssh_worker
+    restart: unless-stopped
+    command: celery -A agent_project worker --loglevel=info --concurrency=2
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ─── Celery Beat (agendador) ───────────────────────────────────────────────
+  beat:
+    build: .
+    container_name: agentssh_beat
+    restart: unless-stopped
+    command: >
+      celery -A agent_project beat --loglevel=info
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - web       # garante que a migration já rodou antes do beat subir
+      - redis
+
+volumes:
+  redis_data:
+  db_data:

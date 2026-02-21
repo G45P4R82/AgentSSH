@@ -2,3 +2,15 @@ django>=5.0,<6.0
 paramiko>=3.4.0
 google-generativeai>=0.3.0
 python-dotenv>=1.0.0
+
+# Celery + agendamento
+celery>=5.3.0
+redis>=5.0.0
+django-celery-beat>=2.6.0
+django-celery-results>=2.5.0
+
+# Coleta de métricas e vector store
+requests>=2.31.0
+qdrant-client>=1.9.0
+prometheus-client>=0.20.0
+sentence-transformers>=3.0.0

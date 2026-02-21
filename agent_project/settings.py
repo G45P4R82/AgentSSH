@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'agent',  # Our agent app
     'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +128,38 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ---------------------------------------------------------------------------
+# Celery Configuration
+# ---------------------------------------------------------------------------
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
+# Broker e backend
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = 'django-db'   # armazena resultados no SQLite via django_celery_results
+CELERY_CACHE_BACKEND = 'default'
+
+# Serialização
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Timezone
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+# Usa django-celery-beat como scheduler
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# ---------------------------------------------------------------------------
+# Agendamento periódico — roda a cada 10 minutos
+# ---------------------------------------------------------------------------
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    'ingest-homelab-metrics-every-10-minutes': {
+        'task': 'agent.tasks.ingest_homelab_metrics',
+        'schedule': crontab(minute='*/10'),   # 0, 10, 20, 30, 40, 50 de cada hora
+    },
+}
