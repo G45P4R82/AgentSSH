@@ -9,7 +9,7 @@ from agent.tasks import get_embedding_model, get_qdrant_client, COLLECTION_NAME
 logger = logging.getLogger(__name__)
 
 class RouterAgent:
-    def __init__(self, model_name: str = 'gemini-1.5-flash'):
+    def __init__(self, model_name: str = 'gemini-2.5-flash'):
         self.model_name = model_name
         self.api_key = os.getenv('GEMINI_API_KEY')
         genai.configure(api_key=self.api_key)
@@ -40,7 +40,7 @@ class RouterAgent:
         return 'SSH'
 
 class RAGAgent:
-    def __init__(self, model_name: str = 'gemini-1.5-flash'):
+    def __init__(self, model_name: str = 'gemini-2.5-flash'):
         self.model_name = model_name
         self.api_key = os.getenv('GEMINI_API_KEY')
         genai.configure(api_key=self.api_key)
