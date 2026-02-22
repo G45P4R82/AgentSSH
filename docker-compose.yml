@@ -59,6 +59,7 @@ services:
     command: celery -A agent_project worker --loglevel=info --concurrency=2
     volumes:
       - .:/app
+      - db_data:/app/db.sqlite3
     env_file:
       - .env
     environment:
@@ -80,6 +81,7 @@ services:
       --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
       - .:/app
+      - db_data:/app/db.sqlite3
     env_file:
       - .env
     environment:
