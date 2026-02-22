@@ -86,13 +86,17 @@ class AgentExecutor:
         )
         return self._clean_command(self._get_response_text(response))
 
-    def run_loop(self, prompt: str, execute_callback: Callable[[str], str]) -> Generator[Dict[str, Any], None, None]:
+    def run_loop(self, prompt: str, execute_callback: Callable[[str], str], host_name: str = None, host_ip: str = None) -> Generator[Dict[str, Any], None, None]:
         """
         Executes the ReAct loop (Reason, Act, Observe).
         Yields dictionaries with 'type' and 'content'.
         """
-        system_instruction = """You are an advanced Linux System Administrator Agent.
-        Your goal is to solve the user's request by executing bash commands and analyzing their output.
+        host_context = ""
+        if host_name and host_ip:
+            host_context = f"\nVOCÊ ESTÁ ATUALMENTE CONECTADO À MÁQUINA: {host_name} ({host_ip}).\nQualquer comando 'COMMAND:' que você fornecer será executado DIRETAMENTE nesta máquina. Não use 'ssh' para se conectar a ela novamente."
+
+        system_instruction = f"""You are an advanced Linux System Administrator Agent.
+        Your goal is to solve the user's request by executing bash commands and analyzing their output.{host_context}
 
         PROTOCOL:
         1. THOUGHT: Explain your reasoning. 

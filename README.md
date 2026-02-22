@@ -29,6 +29,24 @@ graph TD
     Embed -->|Vetores| Qdrant
 ```
 
+## Demostração de Funcionamento
+
+<div align="center">
+  <table>
+    <tr>
+      <td><img src="image.png" alt="alt text" width="250"></td>
+      <td><img src="image-1.png" alt="alt text" width="250"></td>
+      <td><img src="image-2.png" alt="alt text" width="250"></td>
+    </tr>
+    <tr>
+      <td><img src="image-3.png" alt="alt text" width="250"></td>
+      <td><img src="image-4.png" alt="alt text" width="250"></td>
+      <td><img src="image-5.png" alt="alt text" width="250"></td>
+    </tr>
+  </table>
+</div>
+
+
 ### Justificativa de Decisões e Tradeoffs
 - **Arquitetura Multi-Agente**: Escolhida para separar claramente as responsabilidades. O Router evita "alucinações" do agente SSH tentando encontrar dados de métricas via comando, enquanto o agente RAG foca exclusivamente em análise histórica.
 - **Qdrant (Vector Store)**: Utilizado para permitir "memória de status". Em vez de apenas ver o agora, o agente pode entender tendências através de busca semântica em logs de métricas passados.

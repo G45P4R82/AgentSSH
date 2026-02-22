@@ -52,11 +52,11 @@ class RAGAgent:
             
             vector = model.encode(query).tolist()
             
-            search_result = qdrant.search(
+            search_result = qdrant.query_points(
                 collection_name=COLLECTION_NAME,
-                query_vector=vector,
+                query=vector,
                 limit=limit
-            )
+            ).points
             
             context = "Abaixo estão as métricas mais recentes coletadas dos servidores (via NodeExporter):\n\n"
             for res in search_result:
@@ -94,7 +94,7 @@ class MultiAgentOrchestrator:
         self.rag_agent = RAGAgent()
         self.ssh_agent = AgentExecutor(session_id=session_id) # Usando o executor existente
         
-    def run(self, prompt: str, execute_callback: Callable[[str], str]) -> Generator[Dict[str, Any], None, None]:
+    def run(self, prompt: str, execute_callback: Callable[[str], str], host_name: str = None, host_ip: str = None) -> Generator[Dict[str, Any], None, None]:
         # 1. Routing
         yield {"type": "thought", "content": "Analisando a intenção da sua mensagem..."}
         route = self.router.route(prompt)
@@ -103,5 +103,5 @@ class MultiAgentOrchestrator:
             yield {"type": "thought", "content": "Direcionando para o Agente de Especialista em Métricas (RAG)."}
             yield from self.rag_agent.run(prompt)
         else:
-            yield {"type": "thought", "content": "Direcionando para o Agente de Execução SSH."}
-            yield from self.ssh_agent.run_loop(prompt, execute_callback)
+            yield {"type": "thought", "content": f"Direcionando para o Agente de Execução SSH (Host: {host_name})."}
+            yield from self.ssh_agent.run_loop(prompt, execute_callback, host_name=host_name, host_ip=host_ip)

@@ -117,7 +117,12 @@ def run_agent_bg(task_id: int):
                 return f"SSH Error: {str(e)}"
 
         # Run the loop via Orchestrator
-        for step_data in orchestrator.run(task.prompt, execute_callback):
+        for step_data in orchestrator.run(
+            task.prompt, 
+            execute_callback, 
+            host_name=task.host.name, 
+            host_ip=task.host.hostname
+        ):
             # Create Step record
             step = TaskStep.objects.create(
                 task=task,
