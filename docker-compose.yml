@@ -16,6 +16,17 @@ services:
       timeout: 3s
       retries: 5
 
+  # ─── Qdrant (Banco de Vetores) ───────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: agentssh_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage:z
+
   # ─── Django runserver ──────────────────────────────────────────────────────
   web:
     build: .
@@ -33,9 +44,12 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
     depends_on:
       redis:
         condition: service_healthy
+      qdrant:
+        condition: service_started
 
   # ─── Celery Worker ─────────────────────────────────────────────────────────
   worker:
@@ -49,9 +63,12 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
     depends_on:
       redis:
         condition: service_healthy
+      qdrant:
+        condition: service_started
 
   # ─── Celery Beat (agendador) ───────────────────────────────────────────────
   beat:
@@ -67,10 +84,13 @@ services:
       - .env
     environment:
       REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
     depends_on:
       - web       # garante que a migration já rodou antes do beat subir
       - redis
+      - qdrant
 
 volumes:
   redis_data:
   db_data:
+  qdrant_storage:

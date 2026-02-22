@@ -8,13 +8,14 @@ APP_SERVICE = web
 .DEFAULT_GOAL := help
 
 .PHONY: help build up down restart logs logs-web logs-worker logs-beat \
-        shell migrate createsuperuser test bash-redis ps clean
+        shell migrate createsuperuser test check-unit bash ps clean
 
 # ─── Ajuda ────────────────────────────────────────────────────────────────────
 help:
 	@echo ""
 	@echo "  AgentSSH — comandos disponíveis"
 	@echo "  ─────────────────────────────────────────────────────────"
+	@echo "  make check-unit       Roda os testes Django dentro do container web"
 	@echo "  make build            Constrói (ou reconstrói) as imagens"
 	@echo "  make up               Sobe todos os serviços em background"
 	@echo "  make down             Para e remove todos os containers"
@@ -82,6 +83,9 @@ createsuperuser:
 
 test:
 	$(COMPOSE) exec $(APP_SERVICE) python manage.py test
+
+check-unit:
+	$(COMPOSE) exec $(APP_SERVICE) python manage.py test agent --keepdb
 
 # ─── Celery ───────────────────────────────────────────────────────────────────
 task:

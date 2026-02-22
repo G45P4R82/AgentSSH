@@ -1,5 +1,6 @@
 import logging
 import requests
+import os
 
 from celery import shared_task
 from datetime import datetime
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------
 # Configurações — edite aqui ou mova para settings.py / .env
 # ------------------------------------------------------------------
-QDRANT_URL = "http://192.168.0.43:6333"
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = "homelab_metrics"
 
 NODES = {
