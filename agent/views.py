@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
 from .models import RemoteHost, AgentTask, ChatSession, TaskStep
 from .services.gemini import AgentExecutor
+from .services.multi_agent import MultiAgentOrchestrator
 from .services.ssh import execute_ssh
 from .services.security import validate_command
 import threading
@@ -94,7 +95,7 @@ def run_agent_bg(task_id: int):
         task.status = 'running'
         task.save()
         
-        executor = AgentExecutor(session_id=str(task.session.id) if task.session else None)
+        orchestrator = MultiAgentOrchestrator(session_id=str(task.session.id) if task.session else None)
         
         step_counter = 1
         
@@ -115,8 +116,8 @@ def run_agent_bg(task_id: int):
             except Exception as e:
                 return f"SSH Error: {str(e)}"
 
-        # Run the loop
-        for step_data in executor.run_loop(task.prompt, execute_callback):
+        # Run the loop via Orchestrator
+        for step_data in orchestrator.run(task.prompt, execute_callback):
             # Create Step record
             step = TaskStep.objects.create(
                 task=task,
