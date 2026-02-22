@@ -2,32 +2,60 @@
 
 **AgentSSH** é um agente de infraestrutura inteligente que permite gerenciar e interagir com servidores remotos via SSH usando linguagem natural. Alimentado pelo **Google Gemini API**, ele transforma instruções simples em comandos Bash complexos, executa-os com segurança e analisa os resultados em tempo real.
 
-Além da execução de comandos, o sistema possui um pipeline de observabilidade que coleta métricas de máquinas (via Prometheus), gera embeddings e as armazena em um banco de vetores (**Qdrant**) para consultas semânticas futuras.
+---
+
+## 🏗️ Visão Geral da Arquitetura
+
+O sistema opera sob uma arquitetura de orquestração multi-agente, onde um roteador central decide o fluxo de trabalho com base na intenção da mensagem.
+
+### Fluxo de Decisão (Diagrama)
+
+```mermaid
+graph TD
+    User((Usuário)) -->|Prompt| Router{Router Agent}
+    Router -->|Pergunta de Métricas| RAG[RAG Agent]
+    Router -->|Comando de Ação| SSH[SSH Agent]
+    
+    RAG -->|Busca Semântica| Qdrant[(Qdrant Vector DB)]
+    Qdrant -->|Contexto| RAG
+    RAG -->|Resposta Analítica| User
+    
+    SSH -->|ReAct Loop| Terminal[Remote Host SSH]
+    Terminal -->|Output| SSH
+    SSH -->|Resposta de Execução| User
+    
+    Beat[Celery Beat] -->|Scraping| NodeExporter[Prometheus NodeExporter]
+    NodeExporter -->|Métricas| Embed[Embedding Model]
+    Embed -->|Vetores| Qdrant
+```
+
+### Justificativa de Decisões e Tradeoffs
+- **Arquitetura Multi-Agente**: Escolhida para separar claramente as responsabilidades. O Router evita "alucinações" do agente SSH tentando encontrar dados de métricas via comando, enquanto o agente RAG foca exclusivamente em análise histórica.
+- **Qdrant (Vector Store)**: Utilizado para permitir "memória de status". Em vez de apenas ver o agora, o agente pode entender tendências através de busca semântica em logs de métricas passados.
+- **Loop ReAct (SSH)**: Implementado para tarefas SSH porque permite que o agente corrija o curso (ex: se um comando falha por falta de diretório, ele cria o diretório e tenta novamente).
+- **Tradeoff - Segurança vs Autonomia**: O sistema usa uma blacklist (`security.py`). Embora limite a autonomia total, é essencial para prevenir comandos catastróficos acidentais através do LLM.
 
 ---
 
 ## 🚀 Funcionalidades Principais
 
-- **🤖 Sistema Multi-Agente**: Utiliza um **Router Agent** para identificar a intenção do usuário e direcionar para o especialista correto:
-  - **SSH Agent**: Especialista em execução de comandos e automação Linux (Loop ReAct).
-  - **RAG Agent**: Especialista em análise de métricas históricas e saúde da infraestrutura (Retriever de dados do Qdrant).
+- **🤖 Sistema Multi-Agente**: Utiliza um **Router Agent** para identificar a intenção do usuário e direcionar para o especialista correto.
+- **🔄 Execução Multi-Step (SSH Agent)**: Especialista em automação Linux. O agente pensa (Thought), executa (Action) e analisa (Observation) até concluir a tarefa.
+*   **📈 Observabilidade (RAG Agent)**: Especialista em análise de saúde da infraestrutura, consumindo dados do Qdrant coletados via NodeExporter.
 - **💻 Gestão de Hosts (CRUD)**: Interface completa para cadastrar, editar e remover servidores SSH.
-- **🔄 Execução Multi-Step**: O agente pensa (Thought), executa (Action), observa o resultado (Observation) e analisa até concluir a tarefa.
-- **📈 Observabilidade e RAG**: Coleta automática de métricas de CPU, RAM e Disco via Celery Beat, com armazenamento vetorial no Qdrant.
 - **🛡️ Segurança**: Camada de validação de comandos antes da execução.
-- **⚡ Interface Moderna**: Dashboard desenvolvido com Django e HTMX para uma experiência dinâmica sem recarregamento de página.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-- **Backend**: Python 3.11+, Django 5.0
-- **AI**: Google Gemini Pro (generative-ai)
-- **SSH**: Paramiko
-- **Task Queue**: Celery + Redis
-- **Banco de Dados**: SQLite (Relacional) + Qdrant (Vetorial)
-- **Observability**: Prometheus Node Exporter + Sentence Transformers (Embeddings)
-- **Frontend**: HTMX, Vanilla CSS, Semantic HTML
+- **Linguagem**: Python 3.11+
+- **Framework Web**: Django 5.0 + HTMX
+- **AI/LLM**: Google Gemini 2.5 Flash / 1.5 Flash
+- **Vector Store**: **Qdrant** (banco de vetores para telemetria semântica)
+- **Task Queue**: Celery + Redis (para ingestão assíncrona de métricas)
+- **Conectividade**: Paramiko (SSH)
+- **Observability**: Prometheus Node Exporter + Sentence Transformers (Embeddings `all-MiniLM-L6-v2`)
 
 ---
 
@@ -35,75 +63,58 @@ Além da execução de comandos, o sistema possui um pipeline de observabilidade
 
 ```text
 .
-├── agent/                  # App principal do Django
-│   ├── services/           # Lógica de negócio (Gemini, SSH, Security)
-│   ├── models.py           # Definição de Hosts, Sessions e Tasks
-│   ├── tasks.py            # Tasks do Celery (Ingestão de Métricas)
-│   └── templates/          # Templates HTML/HTMX
-├── agent_project/          # Configurações do projeto Django
-├── scripts/                # Scripts utilitários
-├── docker-compose.yml      # Orquestração de serviços (Web, Worker, Beat, Redis)
-└── Makefile                # Atalhos para comandos comuns
+├── agent/                  # App principal do Django (Agentes e Logica)
+│   ├── services/           # Router, RAG Agent, SSH Agent
+│   ├── models.py           # Hosts, Sessions e Tasks
+│   ├── tasks.py            # Pipelines de Ingestão Qdrant
+│   └── templates/          # Interface com HTMX
+├── docker-compose.yml      # Web, Qdrant, Redis, Worker, Beat
+└── Makefile                # Atalhos (make up, make check-unit, etc)
 ```
 
 ---
 
-## ⚙️ Instalação e Configuração
+## ⚙️ Instalação e Execução
 
 ### Pré-requisitos
 - Docker e Docker Compose V2
-- Chave de API do Google Gemini (Google AI Studio)
+- Chave de API do Google Gemini
 
-### 1. Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto seguindo o modelo:
+### 1. Configuração
+Crie o arquivo `.env`:
 ```bash
 cp .env.example .env
+# Adicione sua GEMINI_API_KEY
 ```
-Preencha as chaves:
-- `GEMINI_API_KEY`: Sua chave do Google AI Studio.
-- `SECRET_KEY`: Chave secreta do Django.
-- `DEBUG`: True/False.
 
-### 2. Rodando com Docker
-O projeto utiliza um `Makefile` para facilitar a gestão dos containers.
+### 2. Execução
+O sistema é totalmente dockerizado e gerenciado via `Makefile`:
 
 ```bash
-# Constrói e sobe todos os serviços (Web, Redis, Worker, Beat)
+# 1. Sobe todos os serviços (incluindo Qdrant e Redis)
 make up
 
-# Aplica as migrations do banco de dados
+# 2. Prepara o banco de dados
 make migrate
 
-# Cria um usuário administrador para o Django
+# 3. Cria acesso administrativo (opcional)
 make createsuperuser
+
+# 4. (Opcional) Roda os testes unitários dentro do docker
+make check-unit
 ```
 
 O sistema estará disponível em: `http://localhost:8000`
 
 ---
 
-## ⌨️ Comandos do Makefile
+## 🧪 Comandos do Makefile
 
-- `make build`: Constrói as imagens Docker.
-- `make logs`: Acompanha os logs de todos os serviços.
-- `make logs-web`: Logs específicos do servidor Django.
-- `make restart`: Reinicia os containers.
-- `make task`: Dispara manualmente a task de ingestão de métricas.
-- `make clean`: Limpa volumes e imagens não utilizadas.
-
----
-
-## 📊 Pipeline de Métricas (Homelab)
-
-O AgentSSH está configurado para monitorar nodes específicos via **Prometheus Node Exporter**.
-
-> **Nota de Configuração**: Os endereços das máquinas e do Qdrant estão configurados em `agent/tasks.py`. Certifique-se de ajustar a variável `NODES` e `QDRANT_URL` para o seu ambiente.
-
-1. A cada 10 minutos, o **Celery Beat** dispara a task `ingest_homelab_metrics`.
-2. O sistema faz o scrap das métricas em `/metrics`.
-3. Transforma o status da máquina em texto legível.
-4. Gera um embedding usando o modelo `all-MiniLM-L6-v2`.
-5. Salva no **Qdrant** para permitir buscas semânticas (ex: "Quais máquinas estão com pouco espaço em disco?").
+- `make up`: Sobe o ambiente completo.
+- `make down`: Para e remove containers e volumes.
+- `make logs`: Acompanha os logs em tempo real.
+- `make check-unit`: Executa a suíte de testes unitários/funcionais.
+- `make task`: Dispara manualmente a coleta de métricas para o Qdrant.
 
 ---
 
