@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Login - AI Remote Agent{% endblock %}
+
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-centered">
+            <div class="column is-4-desktop is-6-tablet">
+                <div class="box has-text-centered p-6">
+                    <span class="icon is-large mb-4 has-text-primary">
+                        <i class="fas fa-robot fa-3x"></i>
+                    </span>
+                    <h1 class="title is-3">Bem-vindo</h1>
+                    <p class="subtitle is-5">Acesse o seu painel de controle</p>
+
+                    <hr>
+
+                    <div class="field mt-5">
+                        <a href="{% url 'social:begin' 'google-oauth2' %}"
+                            class="button is-primary is-large is-fullwidth">
+                            <span class="icon"><i class="fab fa-google"></i></span>
+                            <span>Entrar com Google</span>
+                        </a>
+                    </div>
+
+                    <p class="is-size-7 has-text-grey mt-5">
+                        Utilize sua conta Google para autenticação segura via OpenID Connect.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

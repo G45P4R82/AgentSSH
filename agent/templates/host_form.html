@@ -77,9 +77,28 @@
                             Host{% endif %}</button>
                     </div>
                     <div class="control">
+                        <button type="button" class="button is-warning is-light"
+                            hx-post="{% url 'host_test_connection' %}" hx-include="closest form"
+                            hx-target="#test-result" hx-indicator="#test-loading">
+                            <span class="icon"><i class="fas fa-plug"></i></span>
+                            <span>Testar Conexão</span>
+                        </button>
+                    </div>
+                    <div class="control">
                         <a href="{% url 'hosts' %}" class="button is-link is-light">Cancelar</a>
                     </div>
                 </div>
+
+                <div id="test-result"></div>
+                <div id="test-loading" class="htmx-indicator mt-2">
+                    <span class="icon-text has-text-grey">
+                        <span class="icon"><i class="fas fa-spinner fa-pulse"></i></span>
+                        <span>Testando conexão...</span>
+                    </span>
+                </div>
+                {% if host %}
+                <input type="hidden" name="host_id" value="{{ host.id }}">
+                {% endif %}
             </form>
         </div>
     </div>

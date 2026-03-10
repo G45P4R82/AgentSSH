@@ -1,8 +1,10 @@
 from django.db import models
+from django.contrib.auth.models import User
 import uuid
 
 class RemoteHost(models.Model):
     """Model to store SSH host configurations"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosts', null=True)
     name = models.CharField(max_length=100, help_text="Display name for the host")
     hostname = models.CharField(max_length=255, help_text="IP address or domain")
     username = models.CharField(max_length=100, help_text="SSH username")
@@ -19,6 +21,7 @@ class RemoteHost(models.Model):
 
 class ChatSession(models.Model):
     """Model to store chat sessions/history"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions', null=True)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=200, blank=True, default="New Chat")
     created_at = models.DateTimeField(auto_now_add=True)

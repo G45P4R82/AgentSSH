@@ -20,6 +20,7 @@
 
 <body>
     <!-- Navbar -->
+    {% block navbar %}
     <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
             <a class="navbar-item" href="{% url 'agent' %}">
@@ -46,8 +47,35 @@
                     Meus Hosts
                 </a>
             </div>
+
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    {% if user.is_authenticated %}
+                    <div class="buttons">
+                        <span class="mr-3 has-text-grey-light">
+                            <i class="fas fa-user-circle mr-1"></i> {{ user.username }}
+                        </span>
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="button is-danger is-outlined">
+                                <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                                <span>Sair</span>
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="buttons">
+                        <a href="{% url 'social:begin' 'google-oauth2' %}" class="button is-primary">
+                            <span class="icon"><i class="fab fa-google"></i></span>
+                            <span>Login com Google</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </nav>
+    {% endblock %}
 
     <!-- Main Content -->
     {% block content %}{% endblock %}

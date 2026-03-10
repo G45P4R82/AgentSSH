@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 MAX_TURNS = 5
-MODEL_NAME = 'gemini-2.5-flash'  # Using a consistent model name
+MODEL_NAME = os.getenv('GEMINI_MODEL_NAME', 'gemini-2.5-flash')  # Using a consistent model name
 
 def generate_command(prompt: str, session_id: str = None) -> str:
     """

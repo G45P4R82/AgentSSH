@@ -6,23 +6,27 @@ from .services.gemini import AgentExecutor
 from .services.multi_agent import MultiAgentOrchestrator
 from .services.ssh import execute_ssh
 from .services.security import validate_command
+from django.contrib.auth.decorators import login_required
 import threading
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 
+@login_required
 def home_view(request):
     """Home page - list all registered hosts"""
-    hosts = RemoteHost.objects.all()
+    hosts = RemoteHost.objects.filter(user=request.user)
     return render(request, 'index.html', {'hosts': hosts})
 
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def host_new_view(request):
     """Create a new SSH host"""
     if request.method == 'POST':
         RemoteHost.objects.create(
+            user=request.user,
             name=request.POST.get('name'),
             hostname=request.POST.get('hostname'),
             username=request.POST.get('username'),
@@ -34,10 +38,11 @@ def host_new_view(request):
     return render(request, 'host_form.html')
 
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def host_edit_view(request, host_id):
     """Edit an existing SSH host"""
-    host = get_object_or_404(RemoteHost, id=host_id)
+    host = get_object_or_404(RemoteHost, id=host_id, user=request.user)
     
     if request.method == 'POST':
         host.name = request.POST.get('name')
@@ -57,25 +62,27 @@ def host_edit_view(request, host_id):
     return render(request, 'host_form.html', {'host': host})
 
 
+@login_required
 @require_http_methods(["POST"])
 def host_delete_view(request, host_id):
     """Delete an SSH host"""
-    host = get_object_or_404(RemoteHost, id=host_id)
+    host = get_object_or_404(RemoteHost, id=host_id, user=request.user)
     host.delete()
     return redirect('hosts')
 
 
+@login_required
 @require_http_methods(["GET"])
 def agent_view(request, session_id=None):
     """Agent interface - chat with AI and execute commands"""
-    hosts = RemoteHost.objects.all()
-    sessions = ChatSession.objects.all()
+    hosts = RemoteHost.objects.filter(user=request.user)
+    sessions = ChatSession.objects.filter(user=request.user)
     
     current_session = None
     tasks = []
     
     if session_id:
-        current_session = get_object_or_404(ChatSession, id=session_id)
+        current_session = get_object_or_404(ChatSession, id=session_id, user=request.user)
         tasks = current_session.tasks.all()
         
     return render(request, 'agent.html', {
@@ -168,6 +175,7 @@ def run_agent_bg(task_id: int):
         connection.close()
 
 
+@login_required
 @require_http_methods(["POST"])
 def agent_execute_view(request):
     """HTMX endpoint - start agent task"""
@@ -184,9 +192,10 @@ def agent_execute_view(request):
     # Get or create session
     current_session = None
     if session_id:
-        current_session = get_object_or_404(ChatSession, id=session_id)
+        current_session = get_object_or_404(ChatSession, id=session_id, user=request.user)
     else:
         current_session = ChatSession.objects.create(
+            user=request.user,
             title=prompt[:50] + "..." if len(prompt) > 50 else prompt
         )
     
@@ -211,6 +220,7 @@ def agent_execute_view(request):
     return render(request, 'partials/chat_message_shell.html', context)
 
 
+@login_required
 @require_http_methods(["GET"])
 def agent_task_stream_view(request, task_id):
     """Endpoint for polling task updates"""
@@ -226,3 +236,34 @@ def agent_task_stream_view(request, task_id):
     }
     
     return render(request, 'partials/agent_steps.html', context)
+
+
+def login_view(request):
+    """Dedicated login page"""
+    if request.user.is_authenticated:
+        return redirect('agent')
+    return render(request, 'login.html')
+
+
+@login_required
+@require_http_methods(["POST"])
+def host_test_connection_view(request):
+    """Test SSH connection without saving"""
+    hostname = request.POST.get('hostname')
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    host_id = request.POST.get('host_id')
+
+    # If editing and password is empty, try to get existing password
+    if not password and host_id:
+        host = get_object_or_404(RemoteHost, id=host_id, user=request.user)
+        password = host.password
+
+    if not all([hostname, username, password]):
+        return HttpResponse('<div class="notification is-warning is-light py-2 px-4 mt-2">Preencha todos os campos obrigatórios.</div>')
+
+    try:
+        execute_ssh(hostname, username, password, "whoami")
+        return HttpResponse('<div class="notification is-success is-light py-2 px-4 mt-2"><span class="icon"><i class="fas fa-check-circle"></i></span> Conexão bem-sucedida!</div>')
+    except Exception as e:
+        return HttpResponse(f'<div class="notification is-danger is-light py-2 px-4 mt-2"><span class="icon"><i class="fas fa-exclamation-circle"></i></span> Erro: {str(e)}</div>')

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'agent',  # Our agent app
     'django_celery_beat',
     'django_celery_results',
+    'social_django',  # Social Auth
 ]
 
 MIDDLEWARE = [
@@ -55,6 +56,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 ROOT_URLCONF = 'agent_project.urls'
@@ -69,6 +75,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -131,6 +139,17 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+ 
+# ---------------------------------------------------------------------------
+# Security & SSL Configuration
+# ---------------------------------------------------------------------------
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
+# Necessary for OAuth2 state over proxy
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
 
 
 # ---------------------------------------------------------------------------
@@ -166,3 +185,22 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute='*/10'),   # 0, 10, 20, 30, 40, 50 de cada hora
     },
 }
+
+# ---------------------------------------------------------------------------
+# Social Auth Settings (Google)
+# ---------------------------------------------------------------------------
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('OIDC_RP_CLIENT_ID')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('OIDC_RP_CLIENT_SECRET')
+
+# Escopos padrão já incluem email e profile
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile', 'openid']
+
+# Redirecionamento após login
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
+SOCIAL_AUTH_NEW_USER_REDIRECT_URL = '/'
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+OK = "reloaded"
